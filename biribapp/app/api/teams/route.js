@@ -1,25 +1,29 @@
 import { supabase } from "@/lib/supabase";
-import { isAuthed, unauthorized } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (!isAuthed()) return unauthorized();
+  const r = requireAuth();
+  if (r) return r;
   const { data, error } = await supabase
     .from("teams")
-    .select("*")
+    .select("id, name, member_ids, created_at")
     .order("created_at", { ascending: true });
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ teams: data });
 }
 
-export async function POST(request) {
-  if (!isAuthed()) return unauthorized();
-  const { name, member_ids } = await request.json();
-  if (!name || !name.trim()) {
-    return Response.json({ error: "Name required" }, { status: 400 });
-  }
+export async function POST(req) {
+  const r = requireAuth();
+  if (r) return r;
+  const body = await req.json().catch(() => ({}));
+  const name = String(body.name || "").trim();
+  if (!name) return Response.json({ error: "Name required" }, { status: 400 });
+  const member_ids = Array.isArray(body.member_ids) ? body.member_ids : [];
   const { data, error } = await supabase
     .from("teams")
-    .insert({ name: name.trim(), member_ids: member_ids || [] })
+    .insert({ name, member_ids })
     .select()
     .single();
   if (error) return Response.json({ error: error.message }, { status: 500 });

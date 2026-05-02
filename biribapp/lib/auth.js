@@ -1,47 +1,38 @@
 import { cookies } from "next/headers";
 
-const PASSCODE = process.env.APP_PASSCODE;
-const COOKIE_NAME = "biribapp_auth";
-
-if (!PASSCODE) {
-  console.warn("APP_PASSCODE env var not set. Authentication is disabled.");
-}
+const COOKIE_NAME = "biriba_session";
+const PASSCODE = process.env.APP_PASSCODE || "";
 
 export function checkPasscode(input) {
   if (!PASSCODE) return false;
   return String(input).trim() === String(PASSCODE).trim();
 }
 
+export function setSessionCookie() {
+  cookies().set(COOKIE_NAME, "ok", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  });
+}
+
+export function clearSessionCookie() {
+  cookies().set(COOKIE_NAME, "", { path: "/", maxAge: 0 });
+}
+
 export function isAuthed() {
-  if (!PASSCODE) return true; // dev fallback
   const c = cookies().get(COOKIE_NAME);
-  return c?.value === PASSCODE;
+  return c?.value === "ok";
 }
 
-export function authCookieOpts() {
-  return {
-    name: COOKIE_NAME,
-    value: PASSCODE,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 90, // 90 days
-  };
-}
-
-export function clearCookieOpts() {
-  return {
-    name: COOKIE_NAME,
-    value: "",
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  };
-}
-
-export function unauthorized() {
-  return Response.json({ error: "Unauthorized" }, { status: 401 });
+export function requireAuth() {
+  if (!isAuthed()) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+  return null;
 }

@@ -1,11 +1,12 @@
-import { cookies } from "next/headers";
-import { checkPasscode, authCookieOpts } from "@/lib/auth";
+import { checkPasscode, setSessionCookie } from "@/lib/auth";
 
-export async function POST(request) {
-  const { passcode } = await request.json();
+export const dynamic = "force-dynamic";
+
+export async function POST(req) {
+  const { passcode } = await req.json().catch(() => ({}));
   if (!checkPasscode(passcode)) {
-    return Response.json({ error: "Wrong passcode" }, { status: 401 });
+    return Response.json({ error: "Invalid passcode" }, { status: 401 });
   }
-  cookies().set(authCookieOpts());
+  setSessionCookie();
   return Response.json({ ok: true });
 }

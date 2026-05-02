@@ -1,24 +1,33 @@
 import { supabase } from "@/lib/supabase";
-import { isAuthed, unauthorized } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
 
-export async function DELETE(request, { params }) {
-  if (!isAuthed()) return unauthorized();
-  const { id } = params;
+export const dynamic = "force-dynamic";
 
-  // Remove from any teams that reference this player
-  const { data: teams } = await supabase.from("teams").select("*");
-  if (teams) {
-    for (const t of teams) {
-      if (t.member_ids && t.member_ids.includes(id)) {
-        await supabase
-          .from("teams")
-          .update({ member_ids: t.member_ids.filter((m) => m !== id) })
-          .eq("id", t.id);
-      }
-    }
+export async function PATCH(req, { params }) {
+  const r = requireAuth();
+  if (r) return r;
+  const body = await req.json().catch(() => ({}));
+  const update = {};
+  if (typeof body.name === "string") update.name = body.name.trim();
+  if (body.photo === null || typeof body.photo === "string") update.photo = body.photo;
+  if (Number.isFinite(body.palette_idx)) update.palette_idx = body.palette_idx;
+  if (Object.keys(update).length === 0) {
+    return Response.json({ error: "No fields to update" }, { status: 400 });
   }
+  const { data, error } = await supabase
+    .from("players")
+    .update(update)
+    .eq("id", params.id)
+    .select()
+    .single();
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  return Response.json({ player: data });
+}
 
-  const { error } = await supabase.from("players").delete().eq("id", id);
+export async function DELETE(_req, { params }) {
+  const r = requireAuth();
+  if (r) return r;
+  const { error } = await supabase.from("players").delete().eq("id", params.id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
 }

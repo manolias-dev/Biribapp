@@ -1,7 +1,8 @@
-import { cookies } from "next/headers";
-import { clearCookieOpts } from "@/lib/auth";
+import { clearSessionCookie } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function POST() {
-  cookies().set(clearCookieOpts());
+  clearSessionCookie();
   return Response.json({ ok: true });
 }

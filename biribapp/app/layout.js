@@ -1,15 +1,16 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "BiribAPP — Score Keeper",
-  description: "Track scores for your Biriba games across devices.",
+  title: "BiribAPP",
+  description: "Score keeper for the Greek card game Biriba",
+  themeColor: "#0A2818",
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0F0F23",
+  userScalable: false,
 };
 
 export default function RootLayout({ children }) {
